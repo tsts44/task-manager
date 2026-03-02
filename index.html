@@ -40,10 +40,10 @@
     .input-area {
       display: flex;
       gap: 8px;
-      margin-bottom: 24px;
+      margin-bottom: 8px;
     }
 
-    .input-area input {
+    .input-area input[type="text"] {
       flex: 1;
       padding: 10px 14px;
       border: 2px solid #ddd;
@@ -53,7 +53,34 @@
       transition: border-color 0.2s;
     }
 
-    .input-area input:focus {
+    .input-area input[type="text"]:focus {
+      border-color: #4f8ef7;
+    }
+
+    .date-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .date-area label {
+      font-size: 0.85rem;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    .date-area input[type="date"] {
+      padding: 6px 10px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+      color: #333;
+    }
+
+    .date-area input[type="date"]:focus {
       border-color: #4f8ef7;
     }
 
@@ -102,6 +129,28 @@
       color: #aaa;
     }
 
+    .task-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .due-date {
+      font-size: 0.78rem;
+      color: #888;
+    }
+
+    .due-date.overdue {
+      color: #e53935;
+      font-weight: bold;
+    }
+
+    .due-date.soon {
+      color: #f57c00;
+      font-weight: bold;
+    }
+
     li input[type="checkbox"] {
       width: 18px;
       height: 18px;
@@ -144,6 +193,10 @@
       <input type="text" id="taskInput" placeholder="新しいタスクを入力..." />
       <button onclick="addTask()">追加</button>
     </div>
+    <div class="date-area">
+      <label for="dueDateInput">期限日：</label>
+      <input type="date" id="dueDateInput" />
+    </div>
     <div class="task-count" id="taskCount"></div>
     <ul id="taskList"></ul>
     <p class="empty" id="emptyMsg">タスクがありません</p>
@@ -182,9 +235,31 @@
         checkbox.checked = task.done;
         checkbox.onchange = () => toggleTask(index);
 
+        const info = document.createElement('div');
+        info.className = 'task-info';
+
         const span = document.createElement('span');
         span.className = 'task-text';
         span.textContent = task.text;
+        info.appendChild(span);
+
+        if (task.dueDate) {
+          const due = document.createElement('span');
+          due.className = 'due-date';
+          const today = new Date(); today.setHours(0,0,0,0);
+          const dueDay = new Date(task.dueDate + 'T00:00:00');
+          const diff = Math.ceil((dueDay - today) / 86400000);
+          if (diff < 0) {
+            due.classList.add('overdue');
+            due.textContent = `期限切れ（${task.dueDate}）`;
+          } else if (diff <= 2) {
+            due.classList.add('soon');
+            due.textContent = `期限：${task.dueDate}（あと${diff}日）`;
+          } else {
+            due.textContent = `期限：${task.dueDate}`;
+          }
+          info.appendChild(due);
+        }
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
@@ -192,7 +267,7 @@
         deleteBtn.onclick = () => deleteTask(index);
 
         li.appendChild(checkbox);
-        li.appendChild(span);
+        li.appendChild(info);
         li.appendChild(deleteBtn);
         list.appendChild(li);
       });
@@ -202,10 +277,12 @@
       const input = document.getElementById('taskInput');
       const text = input.value.trim();
       if (!text) return;
-      tasks.push({ text, done: false });
+      const dueDate = document.getElementById('dueDateInput').value;
+      tasks.push({ text, done: false, dueDate: dueDate || null });
       save();
       render();
       input.value = '';
+      document.getElementById('dueDateInput').value = '';
       input.focus();
     }
 
